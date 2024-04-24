@@ -1,6 +1,7 @@
 import uuid
 import json
 import requests
+import time
 
 from .DpopUtils import generate_DPOP
 
@@ -100,7 +101,7 @@ def pageToPageToken(page):
 # returns an generator for Item objects
 # keeps searching until no results so may take a while to get results back
 
-def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords=""):
+def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id=0):
 
     # This is per page and not for the final result
     limit = 120
@@ -129,9 +130,18 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
         ]
     }
 
+    if category_id != 0:
+        data["searchCondition"]["category_id"] = category_id
+
     has_next_page = True
+    total_page = 0
 
     while has_next_page:
+        total_page += 1
+        print(f"fetching {keywords}, page {total_page}")
         items, has_next_page, next_page_token = fetch(searchURL, data)
         yield from items
         data['pageToken'] = next_page_token
+        if total_page > 20:
+            break
+        time.sleep(1)
