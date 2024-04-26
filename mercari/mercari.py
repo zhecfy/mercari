@@ -68,7 +68,7 @@ def parse(resp):
     return [Item.fromApiResp(item) for item in respItems], bool(nextPageToken), nextPageToken
 
 
-def fetch(url, data):
+def fetch(url, data, request_interval=1):
     DPOP = generate_DPOP(
         # let's see if this gets blacklisted, but it also lets them track
         uuid="Mercari Python Bot",
@@ -88,11 +88,16 @@ def fetch(url, data):
     
     serializedData = json.dumps(data, ensure_ascii=False).encode('utf-8')
 
-    r = requests.post(url, headers=headers, data=serializedData)
+    while True:
+        try:
+            r = requests.post(url, headers=headers, data=serializedData)
 
-    r.raise_for_status()
+            r.raise_for_status()
 
-    return parse(r.json())
+            return parse(r.json())
+        except requests.exceptions.HTTPError as e:
+            time.sleep(request_interval)
+            request_interval *= 2
 
 # not sure if the v1 prefix ever changes, but from quick testing, doesn't seem like it
 def pageToPageToken(page):
@@ -139,7 +144,7 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
     while has_next_page:
         total_page += 1
         print(f"fetching {keywords}, page {total_page}")
-        items, has_next_page, next_page_token = fetch(searchURL, data)
+        items, has_next_page, next_page_token = fetch(searchURL, data, request_interval=request_interval)
         yield from items
         data['pageToken'] = next_page_token
         if total_page > total_page_limit:
