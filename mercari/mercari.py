@@ -146,7 +146,7 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
         print(f"fetching {keywords}, page {total_page}")
         while True:
             try:
-                items, has_next_page, next_page_token = fetch(searchURL, data, request_interval=request_interval)
+                items, has_next_page, next_page_token = fetch(searchURL, data)
                 request_interval -= initial_request_interval
                 if request_interval <= 0:
                     request_interval = initial_request_interval
