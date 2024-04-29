@@ -2,6 +2,8 @@ import uuid
 import json
 import requests
 import time
+import logging
+from typing import Tuple, List
 
 from .DpopUtils import generate_DPOP
 
@@ -68,7 +70,7 @@ def parse(resp):
     return [Item.fromApiResp(item) for item in respItems], bool(nextPageToken), nextPageToken
 
 
-def fetch(url, data, request_interval=1):
+def fetch(url, data):
     DPOP = generate_DPOP(
         # let's see if this gets blacklisted, but it also lets them track
         uuid="Mercari Python Bot",
@@ -88,16 +90,11 @@ def fetch(url, data, request_interval=1):
     
     serializedData = json.dumps(data, ensure_ascii=False).encode('utf-8')
 
-    while True:
-        try:
-            r = requests.post(url, headers=headers, data=serializedData)
+    r = requests.post(url, headers=headers, data=serializedData)
 
-            r.raise_for_status()
+    r.raise_for_status()
 
-            return parse(r.json())
-        except requests.exceptions.HTTPError as e:
-            time.sleep(request_interval)
-            request_interval *= 2
+    return parse(r.json())
 
 # not sure if the v1 prefix ever changes, but from quick testing, doesn't seem like it
 def pageToPageToken(page):
@@ -106,7 +103,7 @@ def pageToPageToken(page):
 # returns an generator for Item objects
 # keeps searching until no results so may take a while to get results back
 
-def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id=[0], total_page_limit=20, request_interval=1):
+def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id=[0], total_page_limit=20, request_interval=1) -> Tuple[bool, List[Item]]:
 
     # This is per page and not for the final result
     limit = 120
@@ -141,12 +138,29 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
     has_next_page = True
     total_page = 0
 
+    result = []
+    initial_request_interval = request_interval
+
     while has_next_page:
         total_page += 1
         print(f"fetching {keywords}, page {total_page}")
-        items, has_next_page, next_page_token = fetch(searchURL, data, request_interval=request_interval)
-        yield from items
+        while True:
+            try:
+                items, has_next_page, next_page_token = fetch(searchURL, data, request_interval=request_interval)
+                request_interval -= initial_request_interval
+                if request_interval <= 0:
+                    request_interval = initial_request_interval
+                break
+            except requests.exceptions.HTTPError as e:
+                print(f"Fetch error, sleeping {request_interval}s:\n{e}")
+                logging.error(f"Fetch error, sleeping {request_interval}s:\n{e}", exc_info=True)
+                time.sleep(request_interval)
+                request_interval *= 2
+                if request_interval >= 600:
+                    return False, []
+        result += items
         data['pageToken'] = next_page_token
         if total_page > total_page_limit:
             break
         time.sleep(request_interval)
+    return True, result
