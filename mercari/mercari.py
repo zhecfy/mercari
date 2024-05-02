@@ -152,8 +152,8 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
                     request_interval = initial_request_interval
                 break
             except requests.exceptions.HTTPError as e:
-                print(f"Fetch error, sleeping {request_interval}s:\n{e}")
-                logging.error(f"Fetch error, sleeping {request_interval}s:\n{e}", exc_info=True)
+                print(f"Fetch error, sleep for {request_interval}s:\n{e}")
+                logging.error(f"Fetch error, sleep for {request_interval}s:\n{e}", exc_info=True)
                 time.sleep(request_interval)
                 request_interval *= 2
                 if request_interval >= 600:
