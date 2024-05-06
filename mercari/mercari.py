@@ -103,7 +103,7 @@ def pageToPageToken(page):
 # returns an generator for Item objects
 # keeps searching until no results so may take a while to get results back
 
-def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id=[0], total_page_limit=20, request_interval=1) -> Tuple[bool, List[Item]]:
+def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id: List[int] = [], item_condition_id: List[int] = [], total_page_limit=20, request_interval=1) -> Tuple[bool, List[Item]]:
 
     # This is per page and not for the final result
     limit = 120
@@ -123,6 +123,8 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
             "order": order,
             "status": [status],
             "excludeKeyword": exclude_keywords,
+            "categoryId": category_id, # strange: "category_id" would do too
+            "itemConditionId": item_condition_id
         },
         # I'm not certain what these are, but I believe it's what mercari queries against
         # this is the default in their site, so leaving it as these 2
@@ -131,9 +133,6 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
             "DATASET_TYPE_BEYOND"
         ]
     }
-
-    if category_id != [0]:
-        data["searchCondition"]["category_id"] = category_id
 
     has_next_page = True
     total_page = 0
