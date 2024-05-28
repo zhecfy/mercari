@@ -61,6 +61,7 @@ Which will sort by most recent to oldest, and only show on sale item.
 
 You can also pass `excluded_keywords="something to exclude"` if you want to remove certain pieces from your search
 
+[Mercari API Parameters Guide (Unofficial)](parameters.md)
 
 ## Development
 

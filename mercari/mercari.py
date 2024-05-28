@@ -16,6 +16,7 @@ class MercariSearchStatus:
     DEFAULT = "STATUS_DEFAULT"
     ON_SALE = "STATUS_ON_SALE"
     SOLD_OUT = "STATUS_SOLD_OUT"
+    TRADING = "STATUS_TRADING"
 
 
 class MercariSort:
@@ -103,7 +104,7 @@ def pageToPageToken(page):
 # returns an generator for Item objects
 # keeps searching until no results so may take a while to get results back
 
-def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, exclude_keywords="", category_id: List[int] = [], item_condition_id: List[int] = [], total_page_limit=20, request_interval=1) -> Tuple[bool, List[Item]]:
+def search(keywords, exclude_keywords="", sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDER_DESC, status=MercariSearchStatus.ON_SALE, category_id: List[int] = [], price_max: int = 0, price_min: int = 0, item_condition_id: List[int] = [], total_page_limit=20, request_interval=1) -> Tuple[bool, List[Item]]:
 
     # This is per page and not for the final result
     limit = 120
@@ -119,12 +120,14 @@ def search(keywords, sort=MercariSort.SORT_CREATED_TIME, order=MercariOrder.ORDE
         "indexRouting": "INDEX_ROUTING_UNSPECIFIED",
         "searchCondition": {
             "keyword": keywords,
+            "excludeKeyword": exclude_keywords,
             "sort": sort,
             "order": order,
             "status": [status],
-            "excludeKeyword": exclude_keywords,
             "categoryId": category_id, # strange: "category_id" would do too
-            "itemConditionId": item_condition_id
+            "priceMin": price_min,
+            "priceMax": price_max,
+            "itemConditionId": item_condition_id,
         },
         # I'm not certain what these are, but I believe it's what mercari queries against
         # this is the default in their site, so leaving it as these 2
