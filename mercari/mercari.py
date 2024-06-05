@@ -3,12 +3,16 @@ import json
 import requests
 import time
 import logging
+import re
 from typing import Tuple, List
 
 from .DpopUtils import generate_DPOP
 
 rootURL = "https://api.mercari.jp/"
-rootProductURL = "https://jp.mercari.com/item/"
+mercariIdPattern = r"[a-z][0-9]{11}"
+mercariRootProductURL = "https://jp.mercari.com/item/"
+mercariShopsPattern = r"[a-zA-Z0-9]{22}"
+mercariShopsRootProductURL = "https://jp.mercari.com/shops/product/"
 searchURL = "{}v2/entities:search".format(rootURL)
 
 
@@ -42,7 +46,10 @@ class MercariItemStatus:
 class Item:
     def __init__(self, *args, **kwargs):
         self.id = kwargs['productID']
-        self.productURL = "{}{}".format(rootProductURL, kwargs['productID'])
+        if re.fullmatch(mercariIdPattern, kwargs['productID']):
+            self.productURL = "{}{}".format(mercariRootProductURL, kwargs['productID'])
+        else:
+            self.productURL = "{}{}".format(mercariShopsRootProductURL, kwargs['productID'])
         self.imageURL = kwargs['imageURL']
         self.productName = kwargs['name']
         self.price = kwargs['price']
